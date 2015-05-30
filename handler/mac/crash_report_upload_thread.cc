@@ -135,9 +135,10 @@ class CallRecordUploadAttempt {
 }  // namespace
 
 CrashReportUploadThread::CrashReportUploadThread(CrashReportDatabase* database,
-                                                 const std::string& url)
+    const std::string& url, const int upload_internal_in_minutes)
     : url_(url),
       database_(database),
+      upload_internal_in_minutes_(upload_internal_in_minutes),
       semaphore_(0),
       thread_(0),
       running_(false) {
@@ -244,7 +245,8 @@ void CrashReportUploadThread::ProcessPendingReport(
       // If the most recent upload attempt occurred within the past hour, don’t
       // attempt to upload the new report. If it happened longer ago, attempt to
       // upload the report.
-      const int kUploadAttemptIntervalSeconds = 60 * 60;  // 1 hour
+      const int kUploadAttemptIntervalSeconds =
+          60 * upload_internal_in_minutes_;
       if (now - last_upload_attempt_time < kUploadAttemptIntervalSeconds) {
         database_->SkipReportUpload(report.uuid);
         return;

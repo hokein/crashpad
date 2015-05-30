@@ -46,7 +46,8 @@ class CrashReportUploadThread {
   //! \param[in] database The database to upload crash reports from.
   //! \param[in] url The URL of the server to upload crash reports to.
   CrashReportUploadThread(CrashReportDatabase* database,
-                          const std::string& url);
+                          const std::string& url,
+                          const int upload_internal_in_minutes);
   ~CrashReportUploadThread();
 
   //! \brief Starts a dedicated upload thread, which executes ThreadMain().
@@ -142,6 +143,7 @@ class CrashReportUploadThread {
 
   std::string url_;
   CrashReportDatabase* database_;  // weak
+  int upload_internal_in_minutes_;
   Semaphore semaphore_;  // TODO(mark): Use a condition variable instead?
   pthread_t thread_;
   bool running_;

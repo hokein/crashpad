@@ -47,6 +47,7 @@ void Usage(const std::string& me) {
 "      --handshake-fd=FD       establish communication with the client over FD\n"
 "      --url=URL               send crash reports to this Breakpad server URL,\n"
 "                              only if uploads are enabled for the database\n"
+"      --upload-internal=time  set the upload time internal in minutes\n"
 "      --help                  display this help and exit\n"
 "      --version               output version information and exit\n",
           me.c_str());
@@ -63,6 +64,7 @@ int HandlerMain(int argc, char* argv[]) {
     kOptionDatabase,
     kOptionHandshakeFD,
     kOptionURL,
+    kOptionUploadInternal,
 
     // Standard options.
     kOptionHelp = -2,
@@ -74,14 +76,18 @@ int HandlerMain(int argc, char* argv[]) {
     std::string url;
     const char* database;
     int handshake_fd;
+    int upload_internal;
   } options = {};
   options.handshake_fd = -1;
+  // The defual upload interval is 1 hour.
+  options.upload_internal = 60;
 
   const option long_options[] = {
       {"annotation", required_argument, nullptr, kOptionAnnotation},
       {"database", required_argument, nullptr, kOptionDatabase},
       {"handshake-fd", required_argument, nullptr, kOptionHandshakeFD},
       {"url", required_argument, nullptr, kOptionURL},
+      {"upload-internal", optional_argument, nullptr, kOptionUploadInternal},
       {"help", no_argument, nullptr, kOptionHelp},
       {"version", no_argument, nullptr, kOptionVersion},
       {nullptr, 0, nullptr, 0},
@@ -119,6 +125,14 @@ int HandlerMain(int argc, char* argv[]) {
       }
       case kOptionURL: {
         options.url = optarg;
+        break;
+      }
+      case kOptionUploadInternal: {
+        if (!StringToNumber(optarg, &options.upload_internal)) {
+          ToolSupport::UsageHint(me,
+                                 "--upload-internal requires an int integer");
+          return EXIT_FAILURE;
+        }
         break;
       }
       case kOptionHelp: {
@@ -167,7 +181,8 @@ int HandlerMain(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
-  CrashReportUploadThread upload_thread(database.get(), options.url);
+  CrashReportUploadThread upload_thread(database.get(), options.url,
+      options.upload_internal);
   upload_thread.Start();
 
   CrashReportExceptionHandler exception_handler(
